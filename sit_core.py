@@ -1,6 +1,8 @@
 import os
 import hashlib
 import sqlite3
+from pathlib import Path
+import shutil
 from plyer import notification
 
 # Core functions begin here
@@ -34,9 +36,9 @@ def getFileHash(filePath):
 
 def isModified(filePath, oldHash):
     if getFileHash(filePath) != oldHash:
-        return False
-    else:
         return True
+    else:
+        return False
 
 
 def hashDBInit(hashDBName):
@@ -122,6 +124,18 @@ def getModifiedListFromDB(hashDBName):
 # Extra functions begin here
 
 
+def createBackup(fileName):
+    filePath = Path(fileName)
+    backupPath = filePath.with_suffix('.bak')
+    shutil.copy(filePath, backupPath)
+
+
+def restoreBackup(fileName):
+    filePath = Path(fileName)
+    backupPath = filePath.with_suffix('.bak')
+    shutil.copy(backupPath, filePath)
+
+
 def sendNotification(notificationMessage, notificationTitle="System Integrity Tool"):
     notification.notify(
         title=notificationTitle,
@@ -160,6 +174,7 @@ def trackNewFilesWorkflow(hashDBName, paths):
     for file in filesToTrack:
         hashValue = getFileHash(file)
         storeHashToDB(hashDBName, file, hashValue)
+        createBackup(file)
 
 
 def retrackFilesWorkflow(hashDBName, paths):
@@ -172,6 +187,7 @@ def retrackFilesWorkflow(hashDBName, paths):
     for file in filesToTrack:
         hashValue = getFileHash(file)
         updateHashInDB(hashDBName, file, hashValue, isModified="False")
+        createBackup(file)
 
 
 def scanTrackedFilesWorkflow(hashDBName):
@@ -187,4 +203,15 @@ def scanTrackedFilesWorkflow(hashDBName):
         sendNotification(message)
 
 
+def restoreModifiedFilesWorkflow(hashDBName, file):
+    fileList = getFileListFromDB(hashDBName)
+    for file in fileList:
+        oldHash = getHashFromDB(hashDBName, file)
+        if isModified(file, oldHash):
+            updateHashInDB(hashDBName, file, getFileHash(file))
+    modifiedFiles = getModifiedListFromDB(hashDBName)
+    for file in modifiedFiles:
+        restoreBackup(file)
+        hashValue = getFileHash(file)
+        updateHashInDB(hashDBName, file, hashValue, isModified="False")
 # Generalized workflows end here

@@ -9,6 +9,7 @@ def printHelp():
     print("t: Track new files for Integrity Check, takes Hash DB Name and File or Folder path")
     print("s: Scan tracked files for Integrity Check, takes Hash DB Name")
     print("r: Retrack files for Integrity Check, takes Hash DB Name and File or Folder path")
+    print("b: Restore modified files from backup, takes Hash DB Name and File or Folder path")
 
 
 try:
@@ -24,6 +25,10 @@ try:
         hashDBName = sys.argv[2]
         paths = sys.argv[3]
         retrackFilesWorkflow(hashDBName, paths)
+    elif option == 'b':
+        hashDBName = sys.argv[2]
+        paths = sys.argv[3]
+        restoreModifiedFilesWorkflow(hashDBName, paths)
     else:
         printHelp()
 except:
